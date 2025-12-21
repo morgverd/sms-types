@@ -1,7 +1,19 @@
 [package]
 name = "sms-types"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
+license = "AGPL-3.0-only"
+description = "Rust shared types for SMS Server and Client."
+keywords = ["sms", "gsm", "types"]
+categories = ["api-bindings"]
+homepage = "https://github.com/morgverd/sms-types"
+repository = "https://github.com/morgverd/sms-types"
+documentation = "https://lib.rs/crates/sms-types"
+readme = "README.md"
+authors = ["morgverd <morgverd@gmail.com>"]
+
+[package.metadata.docs.rs]
+all-features = true
 
 [features]
 default = ["http", "websocket", "gnss"]
