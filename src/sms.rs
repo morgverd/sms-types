@@ -41,6 +41,48 @@ impl SmsMessage {
     }
 }
 
+/// A partial outgoing message.
+#[derive(Debug)]
+pub struct SmsOutgoingMessage {
+
+    /// Target phone number.
+    pub phone_number: String,
+
+    /// Message text content.
+    pub content: String,
+
+    /// Should the message be sent as a Class 0 flash delivery.
+    pub flash: bool,
+
+    /// An optional validity period used by the SMC, default 24hr.
+    pub validity_period: Option<u8>,
+
+    /// A timeout to use for sending an SMS message.
+    pub timeout: Option<u32>,
+}
+impl SmsOutgoingMessage {
+
+    /// Get the message sending validity period, either as set or default.
+    #[must_use]
+    pub fn get_validity_period(&self) -> u8 {
+        self.validity_period.unwrap_or(167) // 24hr
+    }
+}
+impl From<&SmsOutgoingMessage> for SmsMessage {
+    fn from(outgoing: &SmsOutgoingMessage) -> Self {
+        SmsMessage {
+            message_id: None,
+            phone_number: outgoing.phone_number.clone(),
+            message_content: outgoing.content.clone(),
+            message_reference: None,
+            is_outgoing: true,
+            status: None,
+            created_at: None,
+            completed_at: None,
+        }
+    }
+}
+
 /// An incoming message from the Modem.
 #[derive(Debug, Clone)]
 pub struct SmsIncomingMessage {
@@ -53,42 +95,6 @@ pub struct SmsIncomingMessage {
 
     /// The raw message content.
     pub content: String,
-}
-impl SmsIncomingMessage {
-    /// Extract the SmsMultipartHeader from PDU UserDataHeader.
-    #[cfg(feature = "pdu")]
-    pub fn with_user_data_header(
-        phone_number: String,
-        user_data_header: Option<sms_pdu::gsm_encoding::udh::UserDataHeader>,
-        content: String,
-    ) -> Result<Self, &'static str> {
-        // Find header component with multipart ID if there is a header.
-        let data = user_data_header.and_then(|header| {
-            header
-                .components
-                .iter()
-                .find(|component| component.id == 0x00)
-                .map(|component| component.data.clone()) // TODO: clones!
-        });
-
-        // If component data is correct size, use it.
-        let message = if let Some(data) = data
-            && data.len() == 3
-        {
-            Self {
-                phone_number,
-                user_data_header: Some(SmsMultipartHeader::try_from(data)?),
-                content,
-            }
-        } else {
-            Self {
-                phone_number,
-                user_data_header: None,
-                content,
-            }
-        };
-        Ok(message)
-    }
 }
 impl From<&SmsIncomingMessage> for SmsMessage {
     fn from(incoming: &SmsIncomingMessage) -> Self {
@@ -386,10 +392,10 @@ pub struct SmsMultipartHeader {
     /// The current received message index.
     pub index: u8,
 }
-impl TryFrom<&[u8]> for SmsMultipartHeader {
+impl TryFrom<Vec<u8>> for SmsMultipartHeader {
     type Error = &'static str;
 
-    fn try_from(data: &[u8]) -> Result<Self, Self::Error> {
+    fn try_from(data: Vec<u8>) -> Result<Self, Self::Error> {
         if data.len() != 3 {
             return Err("Invalid user data length!");
         }
@@ -400,3 +406,4 @@ impl TryFrom<&[u8]> for SmsMultipartHeader {
         })
     }
 }
+
