@@ -60,66 +60,6 @@ impl HttpPaginationOptions {
     }
 }
 
-/// The outgoing SMS message to be sent to a target number.
-#[derive(Serialize, PartialEq, Default, Debug, Clone)]
-pub struct HttpOutgoingSmsMessage {
-    /// The target phone number, this should be in international format.
-    pub to: String,
-
-    /// The full message content. This will be split into multiple messages
-    /// by the server if required. This also supports Unicode emojis etc.
-    pub content: String,
-
-    /// The relative validity period to use for message sending. This determines
-    /// how long the message should remain waiting while undelivered.
-    /// By default, this is determined by the server (24 hours).
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub validity_period: Option<u8>,
-
-    /// Should the SMS message be sent as a Silent class? This makes a popup
-    /// show on the users device with the message content if they're logged in.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub flash: Option<bool>,
-
-    /// A timeout that should be applied to the entire request.
-    /// If one is not set, the default timeout is used.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub timeout: Option<u32>,
-}
-impl HttpOutgoingSmsMessage {
-    /// Create a new outgoing message with a default validity period and no flash.
-    /// The default validity period is applied by SMS-API, so usually 24 hours.
-    pub fn simple_message(to: impl Into<String>, content: impl Into<String>) -> Self {
-        Self {
-            to: to.into(),
-            content: content.into(),
-            ..Default::default()
-        }
-    }
-
-    /// Set the message flash state. This will show a popup if the recipient is
-    /// logged-in to their phone, otherwise as a normal text message.
-    #[must_use]
-    pub fn with_flash(mut self, flash: bool) -> Self {
-        self.flash = Some(flash);
-        self
-    }
-
-    /// Set a relative validity period value.
-    #[must_use]
-    pub fn with_validity_period(mut self, period: u8) -> Self {
-        self.validity_period = Some(period);
-        self
-    }
-
-    /// Set a request timeout value.
-    #[must_use]
-    pub fn with_timeout(mut self, timeout: u32) -> Self {
-        self.timeout = Some(timeout);
-        self
-    }
-}
-
 /// Response returned after sending an SMS message.
 #[derive(Deserialize, PartialEq, Debug, Clone, Copy)]
 pub struct HttpSmsSendResponse {
@@ -130,20 +70,22 @@ pub struct HttpSmsSendResponse {
     pub reference_id: u8,
 }
 
-/// Delivery report for an already sent SMS message.
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Copy)]
-pub struct HttpSmsDeliveryReport {
-    /// Unique identifier for this delivery report.
-    pub report_id: Option<i64>,
-
-    /// Delivery status code from the network.
-    pub status: u8,
-
-    /// Whether this is the final delivery report for the message.
-    pub is_final: bool,
-
-    /// Unix timestamp when this report was created.
-    pub created_at: Option<u32>,
+/// Combine an outgoing message and send response into a dummy `SmsStoredMessage`.
+impl From<(crate::sms::SmsOutgoingMessage, HttpSmsSendResponse)> for crate::sms::SmsMessage {
+    fn from(
+        value: (crate::sms::SmsOutgoingMessage, HttpSmsSendResponse),
+    ) -> crate::sms::SmsMessage {
+        crate::sms::SmsMessage {
+            message_id: Some(value.1.message_id),
+            phone_number: value.0.to,
+            message_content: value.0.content,
+            message_reference: Some(value.1.reference_id),
+            is_outgoing: true,
+            status: None,
+            created_at: None,
+            completed_at: None,
+        }
+    }
 }
 
 /// Network registration status of the modem.
@@ -190,22 +132,6 @@ pub struct HttpModemBatteryLevelResponse {
 
     /// Battery voltage in volts.
     pub voltage: f32,
-}
-
-/// Combine an outgoing message and send response into a dummy `SmsStoredMessage`.
-impl From<(HttpOutgoingSmsMessage, HttpSmsSendResponse)> for crate::sms::SmsMessage {
-    fn from(value: (HttpOutgoingSmsMessage, HttpSmsSendResponse)) -> crate::sms::SmsMessage {
-        crate::sms::SmsMessage {
-            message_id: Some(value.1.message_id),
-            phone_number: value.0.to,
-            message_content: value.0.content,
-            message_reference: Some(value.1.reference_id),
-            is_outgoing: true,
-            status: None,
-            created_at: None,
-            completed_at: None,
-        }
-    }
 }
 
 /// The raw `DeviceInfoResponse` with raw values.
