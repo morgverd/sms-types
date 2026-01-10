@@ -203,14 +203,14 @@ pub enum SmsDeliveryReportStatusCategory {
     Retrying,
 
     /// The message has a permanent error, the message will not be retried.
-    Failed
+    Failed,
 }
 impl From<u8> for SmsDeliveryReportStatusCategory {
     fn from(value: u8) -> Self {
         match value {
-            0x00 => SmsDeliveryReportStatusCategory::Received,        // Received by SME
-            0x01..=0x02 => SmsDeliveryReportStatusCategory::Sent,     // Forwarded/Replaced
-            0x03..=0x1F => SmsDeliveryReportStatusCategory::Sent,     // Reserved/SC-specific success
+            0x00 => SmsDeliveryReportStatusCategory::Received, // Received by SME
+            0x01..=0x02 => SmsDeliveryReportStatusCategory::Sent, // Forwarded/Replaced
+            0x03..=0x1F => SmsDeliveryReportStatusCategory::Sent, // Reserved/SC-specific success
             0x20..=0x3F => SmsDeliveryReportStatusCategory::Retrying,
             0x40..=0x6F => SmsDeliveryReportStatusCategory::Failed,
             _ => SmsDeliveryReportStatusCategory::Failed,
@@ -223,7 +223,7 @@ impl std::fmt::Display for SmsDeliveryReportStatusCategory {
             SmsDeliveryReportStatusCategory::Sent => "Sent",
             SmsDeliveryReportStatusCategory::Received => "Received",
             SmsDeliveryReportStatusCategory::Retrying => "Retrying",
-            SmsDeliveryReportStatusCategory::Failed => "Failed"
+            SmsDeliveryReportStatusCategory::Failed => "Failed",
         })
     }
 }
