@@ -39,6 +39,13 @@ impl SmsMessage {
             ..self.clone()
         }
     }
+
+    /// Get the message created_at time as SystemTime.
+    #[must_use]
+    pub fn created_at(&self) -> Option<std::time::SystemTime> {
+        self.created_at
+            .map(|ts| std::time::UNIX_EPOCH + std::time::Duration::from_secs(u64::from(ts)))
+    }
 }
 
 /// The outgoing SMS message to be sent to a target number.
@@ -181,6 +188,54 @@ pub struct SmsPartialDeliveryReport {
 
     /// The SMS TP-Status: <https://www.etsi.org/deliver/etsi_ts/123000_123099/123040/16.00.00_60/ts_123040v160000p.pdf#page=71>
     pub status: u8,
+}
+
+/// A general category of status message delivery status reports.
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub enum SmsDeliveryReportStatusCategory {
+    /// The message has been sent, however not yet delivered.
+    Sent,
+
+    /// The message has been delivered.
+    Received,
+
+    /// The message has a temporary error, and sending will be retried by the carrier.
+    Retrying,
+
+    /// The message has a permanent error, the message will not be retried.
+    Failed
+}
+impl From<u8> for SmsDeliveryReportStatusCategory {
+    fn from(value: u8) -> Self {
+        match value {
+            0x00 => SmsDeliveryReportStatusCategory::Received,        // Received by SME
+            0x01..=0x02 => SmsDeliveryReportStatusCategory::Sent,     // Forwarded/Replaced
+            0x03..=0x1F => SmsDeliveryReportStatusCategory::Sent,     // Reserved/SC-specific success
+            0x20..=0x3F => SmsDeliveryReportStatusCategory::Retrying,
+            0x40..=0x6F => SmsDeliveryReportStatusCategory::Failed,
+            _ => SmsDeliveryReportStatusCategory::Failed,
+        }
+    }
+}
+impl std::fmt::Display for SmsDeliveryReportStatusCategory {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            SmsDeliveryReportStatusCategory::Sent => "Sent",
+            SmsDeliveryReportStatusCategory::Received => "Received",
+            SmsDeliveryReportStatusCategory::Retrying => "Retrying",
+            SmsDeliveryReportStatusCategory::Failed => "Failed"
+        })
+    }
+}
+impl From<&SmsDeliveryReport> for SmsDeliveryReportStatusCategory {
+    fn from(value: &SmsDeliveryReport) -> Self {
+        SmsDeliveryReportStatusCategory::from(value.status)
+    }
+}
+impl From<&SmsPartialDeliveryReport> for SmsDeliveryReportStatusCategory {
+    fn from(value: &SmsPartialDeliveryReport) -> Self {
+        SmsDeliveryReportStatusCategory::from(value.status)
+    }
 }
 
 /// The sms message multipart header.
