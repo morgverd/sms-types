@@ -61,7 +61,8 @@ impl HttpPaginationOptions {
 }
 
 /// Response returned after sending an SMS message.
-#[derive(Deserialize, PartialEq, Debug, Clone, Copy)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Copy)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub struct HttpSmsSendResponse {
     /// The unique ID assigned to the already sent message.
     pub message_id: i64,
@@ -89,7 +90,8 @@ impl From<(crate::sms::SmsOutgoingMessage, HttpSmsSendResponse)> for crate::sms:
 }
 
 /// Network registration status of the modem.
-#[derive(Deserialize, PartialEq, Debug, Clone, Copy)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Copy)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub struct HttpModemNetworkStatusResponse {
     /// Registration status code (0=not registered, 1=registered home, 5=registered roaming).
     pub registration: u8,
@@ -99,17 +101,19 @@ pub struct HttpModemNetworkStatusResponse {
 }
 
 /// Signal strength information from the modem.
-#[derive(Deserialize, PartialEq, Debug, Clone, Copy)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Copy)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub struct HttpModemSignalStrengthResponse {
     /// Received Signal Strength Indicator (0-31, 99=unknown).
-    pub rssi: u8,
+    pub rssi: i32,
 
     /// Bit Error Rate (0-7, 99=unknown).
-    pub ber: u8,
+    pub ber: i32,
 }
 
 /// Network operator information from the modem.
-#[derive(Deserialize, PartialEq, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub struct HttpModemNetworkOperatorResponse {
     /// Operator selection status (0=automatic, 1=manual).
     pub status: u8,
@@ -122,7 +126,8 @@ pub struct HttpModemNetworkOperatorResponse {
 }
 
 /// Battery status information from the modem.
-#[derive(Deserialize, PartialEq, Debug, Clone, Copy)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Copy)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub struct HttpModemBatteryLevelResponse {
     /// Battery status (0=not charging, 1=charging, 2=no battery).
     pub status: u8,
@@ -134,34 +139,10 @@ pub struct HttpModemBatteryLevelResponse {
     pub voltage: f32,
 }
 
-/// The raw `DeviceInfoResponse` with raw values.
-#[derive(Deserialize, PartialEq, Debug, Clone)]
-pub struct HttpSmsDeviceInfoResponse {
-    /// SMS API version string, including features.
-    pub version: String,
-
-    /// The phone number associated with the SMS device
-    pub phone_number: Option<String>,
-
-    /// The name of the cellular service provider
-    pub service_provider: Option<String>,
-
-    /// Network operator information as (code1, code2, `operator_name`)
-    pub network_operator: Option<(u8, u8, String)>,
-
-    /// Current network connection status as (`status_code`, `strength_indicator`)
-    pub network_status: Option<(u8, u8)>,
-
-    /// Battery information as (`level_percentage`, `charging_status`, voltage)
-    pub battery: Option<(u8, u8, f32)>,
-
-    /// Signal strength information as (`strength_level`, `quality_indicator`)
-    pub signal: Option<(u8, u8)>,
-}
-
 /// Formatted device info response, with each value packed into a proper optional response.
-#[derive(Deserialize, PartialEq, Debug, Clone)]
-pub struct HttpSmsDeviceInfoData {
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+pub struct HttpSmsDeviceInfoResponse {
     /// SMS API version string, including features.
     pub version: String,
 
@@ -183,37 +164,22 @@ pub struct HttpSmsDeviceInfoData {
     /// Signal strength measurements and quality indicators
     pub signal: Option<HttpModemSignalStrengthResponse>,
 }
-impl From<HttpSmsDeviceInfoResponse> for HttpSmsDeviceInfoData {
-    fn from(value: HttpSmsDeviceInfoResponse) -> HttpSmsDeviceInfoData {
-        HttpSmsDeviceInfoData {
-            version: value.version,
-            phone_number: value.phone_number,
-            service_provider: value.service_provider,
-            network_operator: value
-                .network_operator
-                .map(|v| HttpModemNetworkOperatorResponse {
-                    status: v.0,
-                    format: v.1,
-                    operator: v.2,
-                }),
-            network_status: value
-                .network_status
-                .map(|v| HttpModemNetworkStatusResponse {
-                    registration: v.0,
-                    technology: v.1,
-                }),
-            battery: value.battery.map(|v| HttpModemBatteryLevelResponse {
-                status: v.0,
-                charge: v.1,
-                voltage: v.2,
-            }),
-            signal: value.signal.map(|v| HttpModemSignalStrengthResponse {
-                rssi: v.0,
-                ber: v.1,
-            }),
+
+/// Used in latest-numbers return value, as a number and friendly name.
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+pub struct LatestNumberFriendlyNamePair {
+    /// Phone number in international format.
+    pub number: String,
+
+    /// Optional friendly name for display purposes.
+    pub friendly_name: Option<String>,
+}
+impl From<(String, Option<String>)> for LatestNumberFriendlyNamePair {
+    fn from(value: (String, Option<String>)) -> Self {
+        Self {
+            number: value.0,
+            friendly_name: value.1,
         }
     }
 }
-
-/// Used in latest-numbers return value, as a number and friendly name.
-pub type LatestNumberFriendlyNamePair = (String, Option<String>);

@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 /// Represents a stored SMS message from the database.
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub struct SmsMessage {
     /// Unique identifier for the message.
     pub message_id: Option<i64>,
@@ -163,6 +164,7 @@ impl From<&SmsIncomingMessage> for SmsMessage {
 /// A received or stored delivery report.
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Copy)]
 #[cfg_attr(feature = "sqlx", derive(sqlx::FromRow))]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub struct SmsDeliveryReport {
     /// Unique identifier for this delivery report.
     pub report_id: Option<i64>,

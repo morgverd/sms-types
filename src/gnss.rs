@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 /// GNSS (Global Navigation Satellite System) fix status.
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub enum FixStatus {
     /// GNSS fix status is unknown.
     Unknown,
@@ -43,6 +44,7 @@ impl From<u8> for FixStatus {
 
 /// Represents a GNSS position report with optional fields for satellite info.
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub struct PositionReport {
     /// Indicates whether the GNSS receiver is currently running.
     pub run_status: bool,

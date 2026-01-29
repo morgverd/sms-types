@@ -24,14 +24,10 @@ pub enum EventKind {
     /// An unsolicited position report from GNSS.
     #[serde(rename = "gnss_position_report")]
     GNSSPositionReport,
-
-    /// WebSocket connection status update (client-side only).
-    #[serde(rename = "websocket_connection_update")]
-    WebsocketConnectionUpdate,
 }
 impl EventKind {
-    /// Total number of `EventKind`'s.
-    pub const COUNT: usize = 6;
+    /// Total number of  `EventKind`'s.
+    pub const COUNT: usize = 5;
 
     /// Make the `EventKind` into it's u8 bit representation.
     #[inline]
@@ -43,11 +39,10 @@ impl EventKind {
             EventKind::DeliveryReport => 1 << 2,
             EventKind::ModemStatusUpdate => 1 << 3,
             EventKind::GNSSPositionReport => 1 << 4,
-            EventKind::WebsocketConnectionUpdate => 1 << 5,
         }
     }
 
-    /// Create a bitmask with all server `EventKind`'s.
+    /// Create a bitmask with all `EventKind`'s.
     #[inline]
     #[must_use]
     pub const fn all_bits() -> u8 {
@@ -68,7 +63,6 @@ impl From<&Event> for EventKind {
             Event::OutgoingMessage(_) => EventKind::OutgoingMessage,
             Event::DeliveryReport { .. } => EventKind::DeliveryReport,
             Event::ModemStatusUpdate { .. } => EventKind::ModemStatusUpdate,
-            Event::WebsocketConnectionUpdate { .. } => EventKind::WebsocketConnectionUpdate,
 
             #[cfg(feature = "gnss")]
             Event::GnssPositionReport(_) => EventKind::GNSSPositionReport,
@@ -86,7 +80,6 @@ impl TryFrom<&str> for EventKind {
             "outgoing" => Ok(EventKind::OutgoingMessage),
             "delivery" => Ok(EventKind::DeliveryReport),
             "modem_status_update" => Ok(EventKind::ModemStatusUpdate),
-            "websocket_connection_upgrade" => Ok(EventKind::WebsocketConnectionUpdate),
             "gnss_position_report" => Ok(EventKind::GNSSPositionReport),
             _ => Err(format!("Unknown event type {value}")),
         }
@@ -125,16 +118,6 @@ pub enum Event {
 
         /// Current state after update.
         current: crate::modem::ModemStatusUpdateState,
-    },
-
-    /// WebSocket connection status update (client-side only).
-    /// This message is generated locally when there is a connection or disconnection.
-    WebsocketConnectionUpdate {
-        /// Connection status: true = connected, false = disconnected
-        connected: bool,
-
-        /// If connection is false, will the client attempt to automatically reconnect?
-        reconnect: bool,
     },
 
     /// An unsolicited position report from GNSS.
